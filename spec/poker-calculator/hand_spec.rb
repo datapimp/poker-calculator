@@ -1,6 +1,22 @@
 require "spec_helper"
 
 describe PokerCalculator::Hand do
+  describe "Comparing hands" do
+    let(:eights) { PokerCalculator::Hand.new("8c 8d Ac Kd 2s") }
+    let(:nines) { PokerCalculator::Hand.new("9c 9d Ac Kd 2s") }
+    let(:trips) { PokerCalculator::Hand.new("9c 9d 9s Kd 2s") }
+
+    it "should know the ranking hierarchy" do
+      eights.beaten_by?(trips).should be_true
+      trips.beaten_by?(eights).should be_false
+    end
+
+    it "should know if a hand is beaten by another hand of the same rank" do      
+      eights.beaten_by?(nines).should be_true
+      nines.beaten_by?(eights).should be_false
+    end
+  end
+
   describe "Identifying hands" do
     it "should automatically sort the cards by rank in descending order" do 
       hand = PokerCalculator::Hand.new("2c 8c 5c 3d Ah")    
