@@ -81,6 +81,20 @@ module PokerCalculator
       false
     end
 
+    def <=>(other)
+      return -1 if beaten_by?(other)
+      return 1 if other.beaten_by?(self)
+      return 0
+    end
+
+    def <(other)
+      beaten_by?(other)
+    end
+
+    def >(other)
+      other.beaten_by?(self)
+    end
+
     def to_s
       cards.map(&:to_s)
     end
