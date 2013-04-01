@@ -10,9 +10,17 @@ describe PokerCalculator::Card do
     PokerCalculator::Card.new("Kh")
   }
 
+  let(:ten_of_diamonds) {
+    PokerCalculator::Card.new("Td")
+  }
+
   let(:king_of_diamonds) {
     PokerCalculator::Card.new("Kd")
   }
+
+  it "should recognize a ten of diamonds" do
+    ten_of_diamonds.should < king_of_hearts
+  end
 
   it "should recognize a card of a higher value" do
     ace_of_hearts.should > king_of_hearts

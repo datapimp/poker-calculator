@@ -12,7 +12,7 @@ module PokerCalculator
       :three_of_a_kind,
       :straight,
       :flush,
-      :full_of_house,
+      :full_house,
       :four_of_a_kind,
       :straight_flush
     ]
@@ -34,6 +34,7 @@ module PokerCalculator
     def ranking
       return :straight_flush if straight_flush?
       return :four_of_a_kind if four_of_a_kind?
+      return :full_house if full_house?
       return :flush if flush?
       return :straight if straight?
       return :three_of_a_kind if three_of_a_kind?
@@ -47,16 +48,22 @@ module PokerCalculator
     def inner_ranking
       case ranking
       when :straight, :straight_flush
-        [high_card.rank]
+        Array(straight_high_card.rank)
+      when :four_of_a_kind
+        [high_group,kickers]
+      when :full_house
+        high = groups.detect {|v| v[1] == 3 }
+        low  = groups.detect {|v| v[1] == 2 }
+        [high[0],low[0]] 
       when :flush
-        [high_card.rank, sum_of_card_values]
-      when :one_pair, :three_of_a_kind, :quads
+        [high_card.rank, kickers].compact.flatten
+      when :one_pair, :three_of_a_kind
         [high_group, kickers].compact.flatten
-      when :two_pair, :full_house
+      when :two_pair
         Array([high_group, low_pair, kickers].compact.flatten)
       else
         [kickers]
-      end
+      end.flatten
     end
 
     def beaten_by?(other) 
@@ -66,8 +73,8 @@ module PokerCalculator
       return true if other_rank_value > my_rank_value
       
       if other_rank_value == my_rank_value
-        inner_ranking.each_with_index do |ranking,index|
-          return true if other.inner_ranking[index] > ranking
+        inner_ranking.each_with_index do |rank,index|
+          return true if other.inner_ranking[index] > rank
         end
       end 
 
@@ -76,6 +83,10 @@ module PokerCalculator
 
     def to_s
       cards.map(&:to_s)
+    end
+
+    def straight_high_card
+      wheel? ? cards[1] : cards[0]
     end
 
     def high_card
@@ -104,7 +115,7 @@ module PokerCalculator
     end
 
     def groups
-      count_by_rank.to_a.select {|v| v[1] >= 2}
+      count_by_rank.to_a.select {|v| v[1] >= 2}.sort {|a,b| a[1]<=>b[1] }.reverse
     end
 
     def high_group
@@ -120,7 +131,7 @@ module PokerCalculator
     end
 
     def low_pair
-      pairs.map(&:first).sort[1]
+      pairs.map(&:first).sort.reverse[1]
     end
 
     def low_pair_cards
@@ -152,20 +163,26 @@ module PokerCalculator
     end
 
     def one_pair?
-      count_by_rank.values.include?(2)
+      values = count_by_rank.values
+      counts = values.select {|v| v == 2}
+      !values.include?(3) && values.include?(2) && counts.length == 1
     end
 
     def two_pair?
-      counts = count_by_rank.values.select {|v| v == 2}
-      counts.length >= 2
+      values = count_by_rank.values
+      counts = values.select {|v| v == 2}
+      !values.include?(3) && counts.length == 2
     end
 
     def three_of_a_kind?
-      count_by_rank.values.include?(3)
+      values = count_by_rank.values
+      counts = values.select {|v| v == 2}
+      values.include?(3) && !values.include?(2)
     end
 
     def straight?
       return true if wheel?
+      return false unless ranks.uniq.length == 5
 
       diffs = []
 
